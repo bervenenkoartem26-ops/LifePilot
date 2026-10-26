@@ -1,0 +1,842 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><meta name="format-detection" content="telephone=no"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="apple-mobile-web-app-title" content="LifePilot"><meta name="theme-color" content="#F5F4EE"><title>LifePilot</title><link rel="manifest" href="manifest.json"><link rel="icon" type="image/png" sizes="192x192" href="icon-192.png"><link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600&display=swap">
+<style>
+/* Layout: узкая колонка как в приложении Claude. На телефоне нижняя панель вкладок, круглая кнопка «+»
+   и шторка снизу для форм. На широком экране вкладки переезжают в верхнюю панель, шторка становится окном. */
+:root{
+  --bg:#F5F4EE;
+  --surface:#FDFCF9;
+  --surface-2:#EDEBE1;
+  --ink:#1F1E1D;
+  --ink-2:#6B6A64;
+  --line:#E2DFD3;
+  --accent:#BD5D3A;
+  --accent-ink:#FFFFFF;
+  --accent-soft:#F3E0D6;
+  --warn:#8A5A00;
+  --warn-soft:#F4E6C4;
+  --bad:#B3342A;
+  --bad-soft:#F7DDD7;
+  --ok:#3B7A4D;
+  --ok-soft:#DDEBDD;
+  --shadow:0 8px 28px rgba(31,30,29,.14);
+  --f-serif:'Source Serif 4','Iowan Old Style',Georgia,'Times New Roman',serif;
+  --f-sans:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+  --r:18px;
+  --bar-h:64px;
+  --ease:cubic-bezier(.2,.8,.2,1);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#262624;--surface:#30302E;--surface-2:#3B3B38;--ink:#F5F4EE;--ink-2:#AAA89F;--line:#45443F;
+    --accent:#D97757;--accent-ink:#1F1E1D;--accent-soft:#4A3329;
+    --warn:#E2A844;--warn-soft:#41351E;--bad:#F0877C;--bad-soft:#47272A;--ok:#7CC892;--ok-soft:#27382C;
+    --shadow:0 8px 28px rgba(0,0,0,.45);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#262624;--surface:#30302E;--surface-2:#3B3B38;--ink:#F5F4EE;--ink-2:#AAA89F;--line:#45443F;
+  --accent:#D97757;--accent-ink:#1F1E1D;--accent-soft:#4A3329;
+  --warn:#E2A844;--warn-soft:#41351E;--bad:#F0877C;--bad-soft:#47272A;--ok:#7CC892;--ok-soft:#27382C;
+  --shadow:0 8px 28px rgba(0,0,0,.45);
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;touch-action:pan-x pan-y;-ms-touch-action:pan-x pan-y}
+/* запрет копирования и выделения в приложении; поля ввода остаются рабочими */
+html,body,body *{-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none;-webkit-touch-callout:none}
+input,textarea,select,[contenteditable="true"]{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
+img,svg{-webkit-user-drag:none;pointer-events:auto}
+body{touch-action:pan-x pan-y}
+body{
+  background:var(--bg);color:var(--ink);
+  font-family:var(--f-sans);font-size:15px;line-height:1.5;
+  -webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;overscroll-behavior-y:none;
+  padding-block:0 calc(var(--bar-h) + 96px);
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+}
+body.lock{overflow:hidden}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:10}
+.wrap{max-width:720px;margin:0 auto}
+button{font-family:inherit;touch-action:manipulation}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* top bar */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:9;background:var(--bg);display:flex;align-items:center;justify-content:space-between;gap:16px;padding-block:14px 8px}
+.brand{display:flex;align-items:center;gap:10px}
+.mark{width:30px;height:30px;border-radius:9px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;flex:none}
+.brand b{font-family:var(--f-serif);font-weight:500;font-size:20px;letter-spacing:-.01em}
+.tabs-top{display:none;gap:4px;padding:3px;background:var(--surface-2);border-radius:12px}
+.t-top{display:inline-flex;align-items:center;gap:8px;border:0;background:transparent;color:var(--ink-2);font-weight:500;font-size:14px;padding:7px 14px;border-radius:9px;cursor:pointer;transition:background .2s,color .2s}
+.t-top:hover{color:var(--ink)}
+.t-top[aria-current="page"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+@media (min-width:720px){ .tabs-top{display:flex} }
+.badge{min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--bad);color:#fff;font-size:11px;font-weight:600;display:inline-grid;place-items:center;font-variant-numeric:tabular-nums}
+
+/* bottom bar (phone) */
+.bar{position:fixed;left:0;right:0;bottom:0;z-index:15;display:flex;background:var(--surface);border-top:1px solid var(--line);
+  padding:6px max(8px,env(safe-area-inset-right,0px)) env(safe-area-inset-bottom,0px) max(8px,env(safe-area-inset-left,0px))}
+.t-bar{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;border:0;background:transparent;color:var(--ink-2);font-size:11px;font-weight:500;padding:2px 0;cursor:pointer;user-select:none;-webkit-user-select:none}
+.t-bar .ico{position:relative;width:60px;height:30px;border-radius:15px;display:grid;place-items:center;transition:background .25s var(--ease),color .25s}
+.t-bar[aria-current="page"]{color:var(--ink)}
+.t-bar[aria-current="page"] .ico{background:var(--accent-soft);color:var(--accent)}
+.t-bar:active .ico{transform:scale(.92)}
+.t-bar .badge{position:absolute;top:-4px;right:6px}
+@media (min-width:720px){ .bar{display:none} body{padding-block:0 56px} }
+
+/* floating add */
+.fab{position:fixed;z-index:14;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(var(--bar-h) + env(safe-area-inset-bottom,0px) + 16px);
+  width:56px;height:56px;border-radius:18px;border:0;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;cursor:pointer;box-shadow:var(--shadow);
+  transition:transform .15s var(--ease)}
+.fab:active{transform:scale(.92)}
+.fab:not([hidden]){animation:pop .35s var(--ease)}
+@media (min-width:720px){ .fab{display:none} }
+
+main{padding-block:12px 0}
+.stack{display:flex;flex-direction:column;gap:18px}
+.stack>*{min-width:0}
+
+/* type */
+.hello{margin:0;font-family:var(--f-serif);font-weight:500;font-size:clamp(30px,8vw,40px);line-height:1.15;letter-spacing:-.015em;text-wrap:balance}
+.date{margin:0 0 4px;color:var(--ink-2);font-size:14px}
+h2{margin:0;font-family:var(--f-serif);font-weight:500;font-size:22px;letter-spacing:-.01em;text-wrap:balance}
+h3{margin:0;font-size:15px;font-weight:600}
+.label{margin:0;font-size:13px;color:var(--ink-2);font-weight:500}
+.muted{color:var(--ink-2)}
+
+/* buttons, fields */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:9px 18px;border-radius:12px;border:1px solid transparent;font-weight:600;font-size:15px;cursor:pointer;
+  transition:transform .12s var(--ease),background .2s,filter .2s;user-select:none;-webkit-user-select:none}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{filter:brightness(1.06)}
+.btn.ghost{background:transparent;border-color:var(--line);color:var(--ink)}
+.btn.ghost:hover{background:var(--surface-2)}
+.btn.soft{background:var(--accent-soft);color:var(--accent)}
+.btn.danger{background:transparent;color:var(--bad);border-color:var(--line)}
+.btn.sm{min-height:34px;padding:5px 12px;font-size:13px;border-radius:10px}
+.icon-btn{width:40px;height:40px;display:inline-grid;place-items:center;border:0;border-radius:12px;background:transparent;color:var(--ink-2);cursor:pointer}
+.icon-btn:hover{background:var(--surface-2);color:var(--ink)}
+input,select{font:inherit;font-size:16px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px 14px;min-height:46px;width:100%;min-width:0}
+input:focus,select:focus{outline:2px solid var(--accent);outline-offset:0;border-color:transparent}
+input[type="checkbox"]{width:22px;height:22px;min-height:0;padding:0;accent-color:var(--accent)}
+
+/* cards */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:20px}
+.card>h3{margin-bottom:12px}
+.hero{display:flex;flex-direction:column;gap:6px}
+.big{margin:4px 0 0;font-family:var(--f-serif);font-weight:600;font-size:clamp(46px,14vw,66px);letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.big .cur{color:var(--accent);margin-left:.12em}
+.hero .sub{margin:6px 0 0;color:var(--ink-2);font-size:14px}
+.tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:14px}
+.tile{background:var(--surface-2);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.tile span{font-size:13px;color:var(--ink-2)}
+.tile b{font-weight:600;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.quick{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.card.attn{background:var(--bad-soft);border-color:transparent}
+.card.attn h3{color:var(--bad)}
+.empty{text-align:center;padding:32px 20px;display:flex;flex-direction:column;align-items:center;gap:6px}
+.empty h3{font-family:var(--f-serif);font-weight:500;font-size:20px}
+.empty p{margin:0 0 12px;color:var(--ink-2);max-width:30rem}
+.empty .actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+
+.tl{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.tl li{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;padding:11px 0;border-top:1px solid var(--line)}
+.attn .tl li{border-color:rgba(179,52,42,.18)}
+.tl li:first-child{border-top:0;padding-top:0}
+.tl li:last-child{padding-bottom:0}
+.tl-main{flex:1 1 9rem;min-width:0;display:flex;flex-direction:column}
+.tl-name{font-weight:500;overflow-wrap:anywhere}
+.tl-sub{font-size:13px;color:var(--ink-2)}
+.tl-end{display:flex;flex-direction:column;align-items:flex-end;font-variant-numeric:tabular-nums}
+.tl-end small{font-size:12px;color:var(--ink-2)}
+.attn .tl-end small,.attn .tl-sub{color:var(--bad)}
+.bars{display:flex;flex-direction:column;gap:16px}
+.bar-top{display:flex;justify-content:space-between;gap:12px;font-size:14px;margin-bottom:6px}
+.bar-top span:last-child{font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.track{height:8px;background:var(--surface-2);border-radius:4px;overflow:hidden}
+.fill{height:100%;background:var(--accent);border-radius:4px;transform-origin:left center}
+
+/* lists */
+.head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.head .btn{display:none}
+@media (min-width:720px){ .head .btn{display:inline-flex} }
+.head p{margin:2px 0 0;color:var(--ink-2);font-size:14px}
+.list{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.row{display:flex;align-items:center;gap:8px 14px;padding:14px 16px;border-top:1px solid var(--line);cursor:pointer;transition:background .15s;user-select:none;-webkit-user-select:none}
+.row:first-child{border-top:0}
+.row:hover{background:var(--surface-2)}
+.row:active{background:var(--surface-2)}
+.row-main{flex:1 1 8rem;min-width:0}
+.row-main h3{overflow-wrap:anywhere}
+.row-meta{margin:3px 0 0;display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;font-size:13px;color:var(--ink-2)}
+.row-note{margin:4px 0 0;font-size:13px;color:var(--ink-2);overflow-wrap:anywhere}
+.row-end{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.amt{display:flex;flex-direction:column;align-items:flex-end;font-variant-numeric:tabular-nums}
+.amt b{font-size:16px;font-weight:600;white-space:nowrap}
+.amt small{font-size:12px;color:var(--ink-2);white-space:nowrap}
+.row.paid h3,.row.paid .amt b{color:var(--ink-2)}
+.pill{display:inline-block;padding:1px 9px;border-radius:999px;font-size:12px;font-weight:600;background:var(--surface-2);color:var(--ink-2);white-space:nowrap}
+.pill.bad{background:var(--bad-soft);color:var(--bad)}
+.pill.warn{background:var(--warn-soft);color:var(--warn)}
+.pill.ok{background:var(--ok-soft);color:var(--ok)}
+.row.flash{animation:flash 1.4s ease}
+
+/* sheet */
+.sheet-wrap{position:fixed;inset:0;z-index:30;display:flex;align-items:flex-end;justify-content:center}
+.scrim{position:absolute;inset:0;background:rgba(20,19,18,.5);opacity:0;transition:opacity .28s ease}
+.sheet{position:relative;width:100%;max-width:560px;max-height:92dvh;max-height:92vh;overflow-y:auto;background:var(--surface);color:var(--ink);
+  border-radius:24px 24px 0 0;padding:8px 20px calc(20px + env(safe-area-inset-bottom,0px));
+  padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px));
+  transform:translateY(100%);transition:transform .34s var(--ease);box-shadow:var(--shadow);overscroll-behavior:contain}
+.sheet-wrap.open .scrim{opacity:1}
+.sheet-wrap.open .sheet{transform:none}
+.grab{width:40px;height:4px;border-radius:2px;background:var(--line);margin:4px auto 10px}
+.sheet-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.form{display:flex;flex-direction:column;gap:18px}
+.fields{display:flex;flex-direction:column;gap:14px}
+.field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.field label{font-size:13px;font-weight:500;color:var(--ink-2)}
+.field.check{flex-direction:row;align-items:center;gap:12px;padding:4px 0}
+.field.check label{color:var(--ink);font-size:15px}
+.suffix{position:relative}
+.suffix input{padding-right:40px}
+.suffix span{position:absolute;right:14px;top:50%;transform:translateY(-50%);color:var(--ink-2);pointer-events:none}
+.form-actions{display:flex;gap:10px;flex-wrap:wrap}
+.form-actions .primary{flex:1 1 10rem}
+@media (min-width:720px){
+  .sheet-wrap{align-items:center}
+  .sheet{border-radius:24px;transform:translateY(16px) scale(.98);opacity:0;transition:transform .3s var(--ease),opacity .25s ease}
+  .sheet-wrap.open .sheet{transform:none;opacity:1}
+}
+
+/* date picker */
+.datebtn{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;min-height:46px;padding:10px 14px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit;font-size:16px;cursor:pointer;text-align:left;transition:border-color .2s,box-shadow .2s}
+.datebtn:hover{border-color:var(--ink-2)}
+.datebtn[aria-expanded="true"]{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.datebtn svg{color:var(--ink-2);flex:none}
+.cal{display:grid;grid-template-rows:0fr;transition:grid-template-rows .34s var(--ease)}
+.cal.open{grid-template-rows:1fr}
+.cal-in{overflow:hidden;min-height:0}
+.cal-box{margin-top:8px;padding:12px 10px 10px;border-radius:16px;background:var(--surface-2)}
+.cal-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;padding-left:6px}
+.cal-title{font-family:var(--f-serif);font-weight:500;font-size:19px;text-transform:capitalize}
+.cal-nav{display:flex;gap:2px}
+.cal-nav .icon-btn{width:36px;height:36px}
+.cal-wd,.cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr))}
+.cal-wd span{text-align:center;font-size:12px;color:var(--ink-2);padding:4px 0;font-weight:500}
+.cal-grid{row-gap:2px}
+.cal-d{justify-self:center;width:40px;height:40px;border:0;border-radius:50%;background:transparent;color:var(--ink);font:inherit;font-size:15px;font-variant-numeric:tabular-nums;cursor:pointer;display:grid;place-items:center;transition:background .15s,transform .12s var(--ease)}
+.cal-d:hover{background:var(--line)}
+.cal-d:active{transform:scale(.88)}
+.cal-d.out{color:var(--ink-2);opacity:.5}
+.cal-d.today{box-shadow:inset 0 0 0 1.5px var(--accent);color:var(--accent);font-weight:600}
+.cal-d.sel,.cal-d.sel:hover{background:var(--accent);color:var(--accent-ink);font-weight:600;box-shadow:none;opacity:1}
+.cal-foot{display:flex;justify-content:flex-end;margin-top:6px}
+.cal-grid.swap{animation:swap .3s var(--ease)}
+@keyframes swap{from{opacity:0;transform:translateX(calc(var(--dir,1) * 16px))}to{opacity:1;transform:none}}
+
+/* toast */
+.toast-wrap{position:fixed;left:0;right:0;bottom:calc(var(--bar-h) + env(safe-area-inset-bottom,0px) + 12px);display:flex;justify-content:center;pointer-events:none;z-index:40;
+  padding:0 max(16px,env(safe-area-inset-right,0px)) 0 max(16px,env(safe-area-inset-left,0px))}
+@media (min-width:720px){ .toast-wrap{bottom:24px} }
+.toast{pointer-events:auto;display:flex;align-items:center;gap:14px;background:var(--ink);color:var(--bg);padding:11px 16px;border-radius:14px;font-size:14px;box-shadow:var(--shadow);max-width:100%;animation:toast-in .3s var(--ease)}
+.toast button{background:transparent;border:0;color:inherit;font-weight:700;text-decoration:underline;cursor:pointer;font-size:14px;padding:2px 4px}
+
+footer{margin-top:28px;font-size:12px;color:var(--ink-2);text-align:center}
+
+/* motion: only when the view was just opened */
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes pop{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:none}}
+@keyframes flash{0%,40%{background:var(--accent-soft)}100%{background:transparent}}
+@keyframes toast-in{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.anim .rise{animation:rise .5s var(--ease) both;animation-delay:calc(var(--i,0) * 55ms)}
+.anim .fill{animation:grow .8s var(--ease) both;animation-delay:.2s}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <span class="mark" aria-hidden="true">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 13l5 5L20 6"/></svg>
+      </span>
+      <b>LifePilot</b>
+    </div>
+    <nav class="tabs-top" id="tabsTop" aria-label="Разделы"></nav>
+  </header>
+  <main id="main"></main>
+  <footer id="foot"></footer>
+</div>
+
+<nav class="bar" id="tabsBar" aria-label="Разделы"></nav>
+<button class="fab" id="fab" data-a="add" aria-label="Добавить" hidden>
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+</button>
+<div class="sheet-wrap" id="sheet" hidden>
+  <div class="scrim" data-a="cancel"></div>
+  <div class="sheet" id="sheetBody" role="dialog" aria-modal="true"></div>
+</div>
+<div class="toast-wrap"><div class="toast" id="toast" hidden role="status"></div></div>
+
+<script>
+/* ---------- запреты: зум и копирование в приложении (поля ввода не затрагиваются) ---------- */
+(function(){
+  function editable(t){ return !!(t && t.closest && t.closest('input,textarea,select,[contenteditable="true"]')); }
+  ['gesturestart','gesturechange','gestureend'].forEach(function(ev){
+    document.addEventListener(ev, function(e){ e.preventDefault(); }, {passive:false});
+  });
+  document.addEventListener('touchmove', function(e){
+    if (e.touches && e.touches.length > 1) e.preventDefault();
+  }, {passive:false});
+  var lastTouchEnd = 0;
+  document.addEventListener('touchend', function(e){
+    var now = Date.now();
+    if (now - lastTouchEnd < 300 && !editable(e.target)) e.preventDefault();
+    lastTouchEnd = now;
+  }, {passive:false});
+  document.addEventListener('wheel', function(e){
+    if (e.ctrlKey) e.preventDefault();
+  }, {passive:false});
+  document.addEventListener('keydown', function(e){
+    var mod = e.ctrlKey || e.metaKey, k = String(e.key).toLowerCase();
+    if (mod && (k === '+' || k === '-' || k === '=' || k === '0')) { e.preventDefault(); return; }
+    if (mod && (k === 'c' || k === 'x' || k === 'a') && !editable(e.target)) e.preventDefault();
+  });
+  ['copy','cut','contextmenu','dragstart','selectstart'].forEach(function(ev){
+    document.addEventListener(ev, function(e){ if (!editable(e.target)) e.preventDefault(); });
+  });
+})();
+
+(function(){
+'use strict';
+
+var KEY = 'lifepilot-v2', OLD = 'lifepilot-v1';
+var DAY = 864e5;
+var CATS = {
+  subs: ['Видео','Музыка','Софт','Облако','Образование','Спорт','Новости','Другое'],
+  bills: ['Квартплата и ЖКХ','Интернет и связь','Аренда','Кредит','Налоги','Страховка','Транспорт','Другое']
+};
+var TABS = [['dash','Обзор'],['subs','Подписки'],['bills','Платежи']];
+var storageOk = true;
+var reduce = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+/* ---------- даты (локальные) ---------- */
+function today(){ var n = new Date(); return new Date(n.getFullYear(), n.getMonth(), n.getDate()); }
+function parse(s){ var p = s.split('-').map(Number); return new Date(p[0], p[1]-1, p[2]); }
+function iso(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function diff(a, b){ return Math.round((b - a) / DAY); }
+function addDays(s, n){ var d = parse(s); d.setDate(d.getDate() + n); return iso(d); }
+function addMonths(s, n, day){
+  var d = parse(s), want = day || d.getDate();
+  var y = d.getFullYear(), m = d.getMonth() + n;
+  var last = new Date(y, m + 1, 0).getDate();
+  return iso(new Date(y, m, Math.min(want, last)));
+}
+function fmtDate(s){
+  var d = parse(s), o = {day:'numeric', month:'short'};
+  if (d.getFullYear() !== today().getFullYear()) o.year = 'numeric';
+  return d.toLocaleDateString('ru-RU', o);
+}
+function rel(d){
+  if (d < 0) return 'просрочено на ' + (-d) + ' дн.';
+  if (d === 0) return 'сегодня';
+  if (d === 1) return 'завтра';
+  return 'через ' + d + ' дн.';
+}
+function plural(n, f){
+  var a = Math.abs(n) % 100, b = a % 10;
+  if (a > 10 && a < 20) return f[2];
+  if (b > 1 && b < 5) return f[1];
+  if (b === 1) return f[0];
+  return f[2];
+}
+function greeting(){
+  var h = new Date().getHours();
+  return h < 5 ? 'Доброй ночи' : h < 12 ? 'Доброе утро' : h < 18 ? 'Добрый день' : 'Добрый вечер';
+}
+
+/* ---------- форматирование ---------- */
+var nf0 = new Intl.NumberFormat('ru-RU', {maximumFractionDigits:0});
+var nf2 = new Intl.NumberFormat('ru-RU', {maximumFractionDigits:2});
+function rub(n, exact){ return (exact ? nf2 : nf0).format(n) + ' ₽'; }
+function esc(s){
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+
+/* ---------- состояние ---------- */
+function blank(){ return {subs:[], bills:[]}; }
+function migrate(old){
+  // старая версия: убираем примеры, раздел «Быт» и валюты (пересчёт по прежним курсам)
+  var rates = old.rates || {};
+  function conv(a, c){
+    a = Number(a) || 0;
+    if (!c || c === '₽') return a;
+    var r = Number(rates[c]);
+    return r ? Math.round(a * r * 100) / 100 : a;
+  }
+  return {
+    subs:(old.subs || []).filter(function(s){ return !s.ex; }).map(function(s){
+      return {id:s.id || uid(), name:s.name, category:s.category, price:conv(s.price, s.currency), cycle:s.cycle, next:s.next, notes:s.notes || ''};
+    }),
+    bills:(old.bills || []).filter(function(b){ return !b.ex; }).map(function(b){
+      return {id:b.id || uid(), name:b.name, category:b.category, amount:conv(b.amount, b.currency), due:b.due,
+              recurring:!!b.recurring, day:b.day || parse(b.due).getDate(), paid:!!b.paid, paidOn:b.paidOn};
+    })
+  };
+}
+function load(){
+  var raw = null, old = null;
+  try { raw = localStorage.getItem(KEY); if (!raw) old = localStorage.getItem(OLD); } catch(e){ storageOk = false; }
+  if (raw) { try { return Object.assign(blank(), JSON.parse(raw)); } catch(e){ return blank(); } }
+  if (old) { try { return Object.assign(blank(), migrate(JSON.parse(old))); } catch(e){ return blank(); } }
+  return blank();
+}
+function save(){
+  try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e){ storageOk = false; }
+}
+var state = load();
+save();
+var ui = {tab:'dash', form:null, flash:null};
+var toastTimer = null, lastSnap = null, lastTotal = 0;
+
+/* ---------- расчёты ---------- */
+function monthly(s){
+  var p = Number(s.price) || 0;
+  return s.cycle === 'yearly' ? p / 12 : s.cycle === 'weekly' ? p * 52 / 12 : p;
+}
+function cycleLabel(c){ return c === 'yearly' ? 'в год' : c === 'weekly' ? 'в неделю' : 'в месяц'; }
+/* оплата подписки: следующее списание сдвигается на период подписки (месяц, год или неделя) */
+function advanceSub(s){
+  var t = iso(today()), day = s.day || parse(s.next).getDate();
+  function step(n){ return s.cycle === 'weekly' ? addDays(n, 7) : addMonths(n, s.cycle === 'yearly' ? 12 : 1, day); }
+  var n = step(s.next), k = 0;
+  while (n <= t && k < 2400) { k++; n = step(n); }
+  s.next = n;
+}
+function calc(){
+  var tNow = today(), ts = iso(tNow);
+  var cats = {}, subMonth = 0, billMonth = 0, billCount = 0;
+  state.subs.forEach(function(s){
+    var m = monthly(s);
+    subMonth += m; cats[s.category] = (cats[s.category] || 0) + m;
+  });
+  state.bills.forEach(function(b){
+    if (!b.recurring) return;
+    var m = Number(b.amount) || 0;
+    billMonth += m; billCount++; cats[b.category] = (cats[b.category] || 0) + m;
+  });
+  var overdue = [], soon = [];
+  state.bills.forEach(function(b){
+    if (b.paid) return;
+    var d = diff(tNow, parse(b.due));
+    var it = {id:b.id, bill:true, kind:'Платёж', name:b.name, days:d, amt:b.amount, date:b.due};
+    if (d < 0) overdue.push(it); else if (d <= 7) soon.push(it);
+  });
+  state.subs.forEach(function(s){
+    var d = diff(tNow, parse(s.next));
+    var it = {id:s.id, bill:false, kind:'Подписка', name:s.name, days:d, amt:s.price, date:s.next};
+    if (d < 0) overdue.push(it); else if (d <= 7) soon.push(it);
+  });
+  overdue.sort(function(a, b){ return a.days - b.days; });
+  soon.sort(function(a, b){ return a.days - b.days; });
+  var total = subMonth + billMonth;
+  var catList = Object.keys(cats).map(function(k){ return [k, cats[k]]; })
+    .filter(function(x){ return x[1] > 0; }).sort(function(a, b){ return b[1] - a[1]; });
+  return {subMonth:subMonth, billMonth:billMonth, billCount:billCount, total:total, year:total * 12,
+          overdue:overdue, soon:soon, cats:catList};
+}
+
+/* ---------- иконки ---------- */
+var IC = {
+  home:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8v9a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1z"/></svg>',
+  subs:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2l4 4-4 4"/><path d="M3 11V9a3 3 0 013-3h15"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a3 3 0 01-3 3H3"/></svg>',
+  bills:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h14v18l-3-2-2 2-2-2-2 2-2-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg>',
+  cal:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>',
+  left:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>',
+  right:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>',
+  plus:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  close:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>'
+};
+
+/* ---------- вкладки ---------- */
+function renderTabs(c){
+  var n = c.overdue.length;
+  document.getElementById('tabsTop').innerHTML = TABS.map(function(t){
+    var b = (t[0] === 'dash' && n) ? '<span class="badge">' + n + '</span>' : '';
+    return '<button class="t-top" data-a="tab" data-tab="' + t[0] + '"' + (ui.tab === t[0] ? ' aria-current="page"' : '') + '>' + t[1] + b + '</button>';
+  }).join('');
+  document.getElementById('tabsBar').innerHTML = TABS.map(function(t){
+    var b = (t[0] === 'dash' && n) ? '<span class="badge">' + n + '</span>' : '';
+    return '<button class="t-bar" data-a="tab" data-tab="' + t[0] + '"' + (ui.tab === t[0] ? ' aria-current="page"' : '') + '>' +
+      '<span class="ico">' + IC[t[0] === 'dash' ? 'home' : t[0]] + b + '</span>' + t[1] + '</button>';
+  }).join('');
+  document.getElementById('foot').textContent = storageOk
+    ? 'Данные хранятся только в этом браузере и никуда не отправляются.'
+    : 'Хранилище браузера недоступно: данные сохранятся только до закрытия страницы.';
+}
+
+/* ---------- обзор ---------- */
+function rise(i){ return ' rise" style="--i:' + i; }
+function timeline(list){
+  return '<ul class="tl">' + list.map(function(i){
+    return '<li><div class="tl-main"><span class="tl-name">' + esc(i.name) + '</span><span class="tl-sub">' + i.kind + ' · ' + fmtDate(i.date) + '</span></div>' +
+      '<div class="tl-end"><b>' + rub(i.amt, true) + '</b><small>' + rel(i.days) + '</small></div>' +
+      '<button class="btn soft sm" data-a="' + (i.bill ? 'paid' : 'paid-sub') + '" data-id="' + esc(i.id) + '">Оплачено</button></li>';
+  }).join('') + '</ul>';
+}
+function dashView(){
+  var c = calc(), h = '', i = 0, empty = !state.subs.length && !state.bills.length;
+  var dateStr = new Date().toLocaleDateString('ru-RU', {weekday:'long', day:'numeric', month:'long'});
+  h += '<div class="' + rise(i++).slice(0) + '"><p class="date">' + dateStr + '</p><h1 class="hello">' + greeting() + '</h1></div>';
+  h += '<section class="card hero' + rise(i++) + '"><p class="label">Расходы в месяц</p>' +
+       '<p class="big"><span id="bigNum">' + nf0.format(c.total) + '</span><span class="cur">₽</span></p>' +
+       '<p class="sub">≈ ' + rub(c.year) + ' в год</p>' +
+       '<div class="tiles"><div class="tile"><span>Подписки · ' + state.subs.length + '</span><b>' + rub(c.subMonth) + '/мес</b></div>' +
+       '<div class="tile"><span>Платежи · ' + c.billCount + '</span><b>' + rub(c.billMonth) + '/мес</b></div></div></section>';
+  if (empty) {
+    h += '<section class="card empty' + rise(i++) + '"><h3>Пока пусто</h3>' +
+         '<p>Добавьте подписки и регулярные платежи. Здесь появятся итоговая сумма, ближайшие списания и просрочки.</p>' +
+         '<div class="actions"><button class="btn primary" data-a="add" data-k="subs">' + IC.plus + 'Подписку</button>' +
+         '<button class="btn ghost" data-a="add" data-k="bills">' + IC.plus + 'Платёж</button></div></section>';
+    return '<div class="stack">' + h + '</div>';
+  }
+  h += '<div class="quick' + rise(i++) + '"><button class="btn ghost" data-a="add" data-k="subs">' + IC.plus + 'Подписка</button>' +
+       '<button class="btn ghost" data-a="add" data-k="bills">' + IC.plus + 'Платёж</button></div>';
+  if (c.overdue.length) {
+    h += '<section class="card attn' + rise(i++) + '"><h3>Требует внимания</h3>' + timeline(c.overdue) + '</section>';
+  }
+  h += '<section class="card' + rise(i++) + '"><h3>Ближайшие 7 дней</h3>' +
+       (c.soon.length ? timeline(c.soon) : '<p class="muted" style="margin:0">Ничего срочного. Платежи и списания на неделю появятся здесь.</p>') + '</section>';
+  if (c.cats.length) {
+    h += '<section class="card' + rise(i++) + '"><h3>Куда уходят деньги</h3><div class="bars">' + c.cats.map(function(x){
+      return '<div><div class="bar-top"><span>' + esc(x[0]) + '</span><span>' + rub(x[1]) + '/мес</span></div>' +
+             '<div class="track"><div class="fill" style="width:' + Math.max(2, x[1] / c.total * 100).toFixed(1) + '%"></div></div></div>';
+    }).join('') + '</div></section>';
+  }
+  return '<div class="stack">' + h + '</div>';
+}
+
+/* ---------- формы (шторка) ---------- */
+function sel(name, opts, val){
+  return '<select id="f-' + name + '" name="' + name + '">' + opts.map(function(o){
+    return '<option value="' + esc(o[0]) + '"' + (o[0] === val ? ' selected' : '') + '>' + esc(o[1]) + '</option>';
+  }).join('') + '</select>';
+}
+function inp(name, type, val, extra){
+  return '<input id="f-' + name + '" name="' + name + '" type="' + type + '" value="' + esc(val) + '" ' + (extra || '') + '>';
+}
+function fld(label, name, control){
+  return '<div class="field"><label for="f-' + name + '">' + label + '</label>' + control + '</div>';
+}
+function catOpts(k){ return CATS[k].map(function(c){ return [c, c]; }); }
+function money(name, val){
+  return '<div class="suffix">' + inp(name, 'number', val, 'required min="0" step="0.01" inputmode="decimal" placeholder="0"') + '<span>₽</span></div>';
+}
+function sheetHtml(kind, it){
+  var title, fields;
+  if (kind === 'subs') {
+    var v = it || {name:'', category:CATS.subs[0], price:'', cycle:'monthly', next:iso(today()), notes:''};
+    title = it ? 'Изменить подписку' : 'Новая подписка';
+    fields = fld('Название', 'name', inp('name', 'text', v.name, 'required maxlength="80" placeholder="Например, онлайн-кинотеатр" autocomplete="off"')) +
+      fld('Цена', 'price', money('price', v.price)) +
+      fld('Как часто списывают', 'cycle', sel('cycle', [['monthly','Каждый месяц'],['yearly','Раз в год'],['weekly','Каждую неделю']], v.cycle)) +
+      dateFld('Следующее списание', 'next', v.next) +
+      fld('Категория', 'category', sel('category', catOpts('subs'), v.category)) +
+      fld('Заметка', 'notes', inp('notes', 'text', v.notes || '', 'maxlength="120" placeholder="Необязательно" autocomplete="off"'));
+  } else {
+    var b = it || {name:'', category:CATS.bills[0], amount:'', due:iso(today()), recurring:true};
+    title = it ? 'Изменить платёж' : 'Новый платёж';
+    fields = fld('Название', 'name', inp('name', 'text', b.name, 'required maxlength="80" placeholder="Например, квартплата" autocomplete="off"')) +
+      fld('Сумма', 'amount', money('amount', b.amount)) +
+      dateFld('Срок оплаты', 'due', b.due) +
+      '<div class="field check"><input id="f-recurring" name="recurring" type="checkbox"' + (b.recurring ? ' checked' : '') + '><label for="f-recurring">Повторяется каждый месяц</label></div>' +
+      fld('Категория', 'category', sel('category', catOpts('bills'), b.category));
+  }
+  return '<div class="grab" aria-hidden="true"></div>' +
+    '<form class="form" data-form="' + kind + '" data-id="' + (it ? esc(it.id) : '') + '">' +
+    '<div class="sheet-head"><h2>' + title + '</h2><button type="button" class="icon-btn" data-a="cancel" aria-label="Закрыть">' + IC.close + '</button></div>' +
+    '<div class="fields">' + fields + '</div>' +
+    '<div class="form-actions"><button type="submit" class="btn primary">' + (it ? 'Сохранить' : 'Добавить') + '</button>' +
+    (it ? '<button type="button" class="btn danger" data-a="del" data-id="' + esc(it.id) + '">Удалить</button>' : '') + '</div></form>';
+}
+var closeTimer = null;
+function openSheet(kind, id){
+  var it = id ? state[kind].filter(function(x){ return x.id === id; })[0] : null;
+  var wrap = document.getElementById('sheet');
+  clearTimeout(closeTimer);
+  ui.form = {kind:kind, id:id || null};
+  document.getElementById('sheetBody').innerHTML = sheetHtml(kind, it);
+  wrap.hidden = false;
+  document.body.classList.add('lock');
+  requestAnimationFrame(function(){ requestAnimationFrame(function(){ wrap.classList.add('open'); }); });
+  setTimeout(function(){ var f = document.getElementById('f-name'); if (f && !id) f.focus(); }, 340);
+}
+function closeSheet(){
+  var wrap = document.getElementById('sheet');
+  if (wrap.hidden) return;
+  wrap.classList.remove('open');
+  document.body.classList.remove('lock');
+  ui.form = null;
+  closeTimer = setTimeout(function(){ wrap.hidden = true; document.getElementById('sheetBody').innerHTML = ''; }, reduce ? 0 : 320);
+}
+
+/* ---------- календарь ---------- */
+var WD = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+function fmtLong(s){ return parse(s).toLocaleDateString('ru-RU', {day:'numeric', month:'long', year:'numeric'}); }
+function dateFld(label, name, val){
+  return '<div class="field"><label for="f-' + name + '-btn">' + label + '</label>' +
+    '<button type="button" class="datebtn" id="f-' + name + '-btn" data-a="cal-toggle" data-for="' + name + '" aria-expanded="false" aria-controls="cal-' + name + '">' +
+    '<span id="txt-' + name + '">' + fmtLong(val) + '</span>' + IC.cal + '</button>' +
+    '<input type="hidden" id="f-' + name + '" name="' + name + '" value="' + esc(val) + '">' +
+    '<div class="cal" id="cal-' + name + '"><div class="cal-in" id="calin-' + name + '"></div></div></div>';
+}
+function calBox(name){
+  var c = ui.cal, sel = document.getElementById('f-' + name).value, ts = iso(today());
+  var title = new Date(c.y, c.m, 1).toLocaleDateString('ru-RU', {month:'long', year:'numeric'});
+  var first = (new Date(c.y, c.m, 1).getDay() + 6) % 7, cells = '';
+  for (var i = 0; i < 42; i++) {
+    var d = new Date(c.y, c.m, 1 - first + i), s = iso(d);
+    cells += '<button type="button" class="cal-d' + (d.getMonth() !== c.m ? ' out' : '') + (s === ts ? ' today' : '') + (s === sel ? ' sel' : '') +
+      '" data-a="cal-pick" data-for="' + name + '" data-v="' + s + '" aria-label="' + esc(fmtLong(s)) + '">' + d.getDate() + '</button>';
+  }
+  return '<div class="cal-box"><div class="cal-head"><span class="cal-title">' + title + '</span><span class="cal-nav">' +
+    '<button type="button" class="icon-btn" data-a="cal-prev" data-for="' + name + '" aria-label="Предыдущий месяц">' + IC.left + '</button>' +
+    '<button type="button" class="icon-btn" data-a="cal-next" data-for="' + name + '" aria-label="Следующий месяц">' + IC.right + '</button></span></div>' +
+    '<div class="cal-wd">' + WD.map(function(w){ return '<span>' + w + '</span>'; }).join('') + '</div>' +
+    '<div class="cal-grid" id="calgrid-' + name + '">' + cells + '</div>' +
+    '<div class="cal-foot"><button type="button" class="btn ghost sm" data-a="cal-today" data-for="' + name + '">Сегодня</button></div></div>';
+}
+function calShow(name, dir){
+  document.getElementById('calin-' + name).innerHTML = calBox(name);
+  if (dir && !reduce) {
+    var g = document.getElementById('calgrid-' + name);
+    g.style.setProperty('--dir', dir);
+    g.classList.add('swap');
+  }
+}
+function calToggle(name){
+  var box = document.getElementById('cal-' + name), btn = document.getElementById('f-' + name + '-btn');
+  if (box.classList.contains('open')) {
+    box.classList.remove('open'); btn.setAttribute('aria-expanded', 'false'); return;
+  }
+  var v = parse(document.getElementById('f-' + name).value);
+  ui.cal = {y:v.getFullYear(), m:v.getMonth()};
+  calShow(name, 0);
+  box.classList.add('open'); btn.setAttribute('aria-expanded', 'true');
+  setTimeout(function(){ if (box.scrollIntoView) box.scrollIntoView({block:'nearest', behavior:'smooth'}); }, 120);
+}
+function calMove(name, dir){
+  var d = new Date(ui.cal.y, ui.cal.m + dir, 1);
+  ui.cal = {y:d.getFullYear(), m:d.getMonth()};
+  calShow(name, dir);
+}
+function calPick(name, v){
+  document.getElementById('f-' + name).value = v;
+  document.getElementById('txt-' + name).textContent = fmtLong(v);
+  var p = parse(v);
+  ui.cal = {y:p.getFullYear(), m:p.getMonth()};
+  calShow(name, 0);
+  document.getElementById('cal-' + name).classList.remove('open');
+  document.getElementById('f-' + name + '-btn').setAttribute('aria-expanded', 'false');
+}
+
+/* ---------- подписки ---------- */
+function headHtml(title, sub, kind){
+  return '<div class="head' + rise(0) + '"><div><h2>' + title + '</h2><p>' + sub + '</p></div>' +
+         '<button class="btn primary" data-a="add" data-k="' + kind + '">' + IC.plus + 'Добавить</button></div>';
+}
+function emptyList(title, text, kind, label){
+  return '<section class="card empty' + rise(1) + '"><h3>' + title + '</h3><p>' + text + '</p>' +
+         '<div class="actions"><button class="btn primary" data-a="add" data-k="' + kind + '">' + IC.plus + label + '</button></div></section>';
+}
+function subsView(){
+  var list = state.subs.slice().sort(function(a, b){ return a.next < b.next ? -1 : a.next > b.next ? 1 : 0; });
+  var c = calc();
+  var sub = list.length ? list.length + ' ' + plural(list.length, ['подписка','подписки','подписок']) + ' · ' + rub(c.subMonth) + ' в месяц' : 'Здесь будут ваши регулярные списания';
+  var rows = list.map(function(s, n){
+    var d = diff(today(), parse(s.next));
+    var pill = d < 0 ? '<span class="pill bad">' + rel(d) + '</span>' : d <= 7 ? '<span class="pill warn">' + rel(d) + '</span>' : '<span class="pill">' + fmtDate(s.next) + '</span>';
+    var approx = s.cycle !== 'monthly' ? '<small>≈ ' + rub(monthly(s)) + '/мес</small>' : '';
+    return '<div class="row' + (ui.flash === s.id ? ' flash' : '') + rise(n + 1) + '" role="button" tabindex="0" data-a="edit" data-id="' + esc(s.id) + '">' +
+      '<div class="row-main"><h3>' + esc(s.name) + '</h3><div class="row-meta">' + pill + '<span>' + esc(s.category) + '</span></div>' +
+      (s.notes ? '<p class="row-note">' + esc(s.notes) + '</p>' : '') +
+      (s.paidOn ? '<p class="row-note">Последняя оплата ' + fmtDate(s.paidOn) + '</p>' : '') + '</div>' +
+      '<div class="row-end"><div class="amt"><b>' + rub(s.price, true) + '</b><small>' + cycleLabel(s.cycle) + '</small>' + approx + '</div>' +
+      '<button class="btn soft sm" data-a="paid-sub" data-id="' + esc(s.id) + '">Оплачено</button></div></div>';
+  }).join('');
+  return '<div class="stack">' + headHtml('Подписки', sub, 'subs') +
+    (list.length ? '<div class="list">' + rows + '</div>' :
+      emptyList('Подписок пока нет', 'Добавьте первую, чтобы видеть, сколько она стоит в месяц и когда спишут деньги.', 'subs', 'Подписку')) + '</div>';
+}
+
+/* ---------- платежи ---------- */
+function billsView(){
+  var list = state.bills.slice().sort(function(a, b){
+    if (!!a.paid !== !!b.paid) return a.paid ? 1 : -1;
+    return a.due < b.due ? -1 : a.due > b.due ? 1 : 0;
+  });
+  var c = calc();
+  var sub = list.length ? list.length + ' ' + plural(list.length, ['платёж','платежа','платежей']) + (c.billMonth ? ' · ' + rub(c.billMonth) + ' в месяц регулярных' : '') : 'Квартплата, интернет, налоги';
+  var rows = list.map(function(b, n){
+    var d = diff(today(), parse(b.due)), pill;
+    if (b.paid) pill = '<span class="pill ok">Оплачено</span>';
+    else if (d < 0) pill = '<span class="pill bad">' + rel(d) + '</span>';
+    else if (d <= 7) pill = '<span class="pill warn">' + rel(d) + '</span>';
+    else pill = '<span class="pill">' + fmtDate(b.due) + '</span>';
+    var meta = '<span>' + esc(b.category) + (b.recurring ? ' · каждый месяц' : '') + '</span>';
+    var btn = b.paid
+      ? '<button class="btn ghost sm" data-a="unpaid" data-id="' + esc(b.id) + '">Вернуть</button>'
+      : '<button class="btn soft sm" data-a="paid" data-id="' + esc(b.id) + '">Оплачено</button>';
+    return '<div class="row' + (b.paid ? ' paid' : '') + (ui.flash === b.id ? ' flash' : '') + rise(n + 1) + '" role="button" tabindex="0" data-a="edit" data-id="' + esc(b.id) + '">' +
+      '<div class="row-main"><h3>' + esc(b.name) + '</h3><div class="row-meta">' + pill + meta + '</div>' +
+      (b.paidOn ? '<p class="row-note">Последняя оплата ' + fmtDate(b.paidOn) + '</p>' : '') + '</div>' +
+      '<div class="row-end"><div class="amt"><b>' + rub(b.amount, true) + '</b></div>' + btn + '</div></div>';
+  }).join('');
+  return '<div class="stack">' + headHtml('Платежи', sub, 'bills') +
+    (list.length ? '<div class="list">' + rows + '</div>' :
+      emptyList('Платежей пока нет', 'Повторяющийся платёж сам переносится на следующий месяц, когда вы отмечаете его оплаченным.', 'bills', 'Платёж')) + '</div>';
+}
+
+/* ---------- отрисовка ---------- */
+function countUp(to){
+  var el = document.getElementById('bigNum'), from = lastTotal;
+  lastTotal = to;
+  if (!el || reduce || from === to) return;
+  var t0 = null;
+  function step(ts){
+    if (t0 === null) t0 = ts;
+    var p = Math.min(1, (ts - t0) / 650), e = 1 - Math.pow(1 - p, 3);
+    el.textContent = nf0.format(from + (to - from) * e);
+    if (p < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+function render(animate){
+  var c = calc(), main = document.getElementById('main');
+  renderTabs(c);
+  main.innerHTML = ui.tab === 'subs' ? subsView() : ui.tab === 'bills' ? billsView() : dashView();
+  if (animate) { main.classList.remove('anim'); void main.offsetWidth; main.classList.add('anim'); }
+  else main.classList.remove('anim');
+  document.getElementById('fab').hidden = ui.tab === 'dash';
+  if (ui.tab === 'dash') countUp(c.total);
+  ui.flash = null;
+}
+function toast(msg, undo){
+  var el = document.getElementById('toast');
+  el.hidden = true;
+  el.innerHTML = '<span>' + esc(msg) + '</span>' + (undo ? '<button data-a="undo">Отменить</button>' : '');
+  el.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ el.hidden = true; }, 6000);
+}
+function snapshot(){ lastSnap = JSON.stringify({subs:state.subs, bills:state.bills}); }
+function find(kind, id){ return state[kind].filter(function(x){ return x.id === id; })[0]; }
+
+/* ---------- события ---------- */
+document.addEventListener('click', function(e){
+  var el = e.target.closest('[data-a]');
+  if (!el) return;
+  var a = el.dataset.a, id = el.dataset.id, k = el.dataset.k || ui.tab;
+  if (a === 'tab') {
+    if (ui.tab !== el.dataset.tab) { ui.tab = el.dataset.tab; render(true); window.scrollTo(0, 0); }
+    return;
+  }
+  if (a === 'add') { openSheet(k === 'dash' ? 'subs' : k, null); return; }
+  if (a === 'edit') { openSheet(ui.tab, id); return; }
+  if (a === 'cancel') { closeSheet(); return; }
+  if (a === 'del') {
+    var kind = ui.form ? ui.form.kind : ui.tab;
+    snapshot();
+    state[kind] = state[kind].filter(function(x){ return x.id !== id; });
+    save(); closeSheet(); render(); toast('Запись удалена', true); return;
+  }
+  if (a === 'undo') {
+    if (lastSnap) { Object.assign(state, JSON.parse(lastSnap)); lastSnap = null; save(); render(); }
+    document.getElementById('toast').hidden = true; return;
+  }
+  if (a === 'paid') {
+    var b = find('bills', id);
+    if (b) {
+      snapshot();
+      b.paidOn = iso(today());
+      if (b.recurring) { b.due = addMonths(b.due, 1, b.day); b.paid = false; } else { b.paid = true; }
+      ui.flash = id; save(); render();
+      toast(b.recurring ? 'Оплачено. Следующий срок ' + fmtDate(b.due) : 'Платёж оплачен', true);
+    }
+    return;
+  }
+  if (a === 'paid-sub') {
+    var sb = find('subs', id);
+    if (sb) {
+      snapshot(); advanceSub(sb); sb.paidOn = iso(today());
+      ui.flash = id; save(); render();
+      toast('Оплачено. Следующее списание ' + fmtDate(sb.next), true);
+    }
+    return;
+  }
+  if (a === 'cal-toggle') { calToggle(el.dataset['for']); return; }
+  if (a === 'cal-prev' || a === 'cal-next') { calMove(el.dataset['for'], a === 'cal-next' ? 1 : -1); return; }
+  if (a === 'cal-pick') { calPick(el.dataset['for'], el.dataset.v); return; }
+  if (a === 'cal-today') { calPick(el.dataset['for'], iso(today())); return; }
+  if (a === 'unpaid') {
+    var b2 = find('bills', id);
+    if (b2) { b2.paid = false; delete b2.paidOn; ui.flash = id; save(); render(); }
+    return;
+  }
+});
+
+document.addEventListener('keydown', function(e){
+  if (e.key === 'Escape') { closeSheet(); return; }
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.getAttribute && e.target.getAttribute('role') === 'button') {
+    e.preventDefault(); e.target.click();
+  }
+});
+
+document.addEventListener('submit', function(e){
+  var f = e.target.closest('form[data-form]');
+  if (!f) return;
+  e.preventDefault();
+  var k = f.dataset.form, id = f.dataset.id || null, fd = new FormData(f);
+  function g(n){ return String(fd.get(n) || '').trim(); }
+  var item;
+  if (k === 'subs') {
+    item = {name:g('name'), category:g('category'), price:Number(g('price')) || 0, cycle:g('cycle'), next:g('next'), notes:g('notes')};
+    item.day = parse(item.next).getDate();
+  } else {
+    item = {name:g('name'), category:g('category'), amount:Number(g('amount')) || 0, due:g('due'), recurring:fd.get('recurring') === 'on'};
+    item.day = parse(item.due).getDate();
+  }
+  if (!item.name) return;
+  var savedId = id;
+  if (id) {
+    var cur = find(k, id);
+    if (cur) {
+      Object.assign(cur, item);
+      if (k === 'bills' && item.recurring) cur.paid = false;
+    }
+  } else {
+    savedId = uid();
+    if (k === 'bills') item.paid = false;
+    state[k].push(Object.assign({id:savedId}, item));
+  }
+  ui.flash = savedId;
+  if (ui.tab === 'dash') ui.tab = k;
+  save(); closeSheet(); render(ui.tab !== k);
+  toast(id ? 'Изменения сохранены' : 'Запись добавлена');
+});
+
+render(true);
+})();
+</script>
+
+</body></html>
