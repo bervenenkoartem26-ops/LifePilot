@@ -247,6 +247,14 @@ input[type="checkbox"]{width:22px;height:22px;min-height:0;padding:0;accent-colo
 .toast button{background:transparent;border:0;color:inherit;font-weight:700;text-decoration:underline;cursor:pointer;font-size:14px;padding:2px 4px}
 
 footer{margin-top:28px;font-size:12px;color:var(--ink-2);text-align:center}
+footer p{margin:0 0 10px}
+.card.hero{background:linear-gradient(160deg,var(--accent-soft),var(--surface) 60%)}
+.tile.left{grid-column:1/-1;background:var(--accent);color:var(--accent-ink);flex-direction:row;justify-content:space-between;align-items:center;gap:12px}
+.tile.left span{color:inherit;opacity:.85}
+.search input{-webkit-appearance:none;appearance:none;border-radius:14px;background:var(--surface)}
+.nf{text-align:center;padding:28px 0;margin:0;color:var(--ink-2)}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:8px;vertical-align:1px}
+.backup{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
 
 /* motion: only when the view was just opened */
 @keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
@@ -273,6 +281,7 @@ footer{margin-top:28px;font-size:12px;color:var(--ink-2);text-align:center}
   </header>
   <main id="main"></main>
   <footer id="foot"></footer>
+  <input type="file" id="impFile" accept="application/json,.json" hidden>
 </div>
 
 <nav class="bar" id="tabsBar" aria-label="Разделы"></nav>
@@ -456,6 +465,18 @@ function calc(){
           overdue:overdue, soon:soon, cats:catList};
 }
 
+var PAL = ['#BD5D3A','#C9923A','#6F8F5B','#4F7F9A','#8A6FA8','#B5586E','#7A7A70'];
+function buzz(){ if (navigator.vibrate) navigator.vibrate(12); }
+function qf(x){
+  var q = (ui.q || '').trim().toLowerCase();
+  return !q || (x.name + ' ' + x.category + ' ' + (x.notes || '')).toLowerCase().indexOf(q) > -1;
+}
+function monthLeft(){
+  var t = today(), end = iso(new Date(t.getFullYear(), t.getMonth() + 1, 0)), sum = 0, n = 0;
+  state.bills.forEach(function(b){ if (!b.paid && b.due <= end) { sum += Number(b.amount) || 0; n++; } });
+  state.subs.forEach(function(x){ if (x.next <= end) { sum += Number(x.price) || 0; n++; } });
+  return {sum:sum, n:n};
+}
 /* ---------- иконки ---------- */
 var IC = {
   home:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8v9a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1z"/></svg>',
@@ -480,9 +501,11 @@ function renderTabs(c){
     return '<button class="t-bar" data-a="tab" data-tab="' + t[0] + '"' + (ui.tab === t[0] ? ' aria-current="page"' : '') + '>' +
       '<span class="ico">' + IC[t[0] === 'dash' ? 'home' : t[0]] + b + '</span>' + t[1] + '</button>';
   }).join('');
-  document.getElementById('foot').textContent = storageOk
-    ? 'Данные хранятся только в этом браузере и никуда не отправляются.'
-    : 'Хранилище браузера недоступно: данные сохранятся только до закрытия страницы.';
+  document.getElementById('foot').innerHTML = '<p>' + (storageOk
+    ? 'Данные хранятся только на этом устройстве и никуда не отправляются.'
+    : 'Хранилище браузера недоступно: данные сохранятся только до закрытия страницы.') + '</p>' +
+    '<div class="backup"><button class="btn ghost sm" data-a="export">Сохранить копию</button>' +
+    '<button class="btn ghost sm" data-a="import">Загрузить копию</button></div>';
 }
 
 /* ---------- обзор ---------- */
@@ -502,7 +525,9 @@ function dashView(){
        '<p class="big"><span id="bigNum">' + nf0.format(c.total) + '</span><span class="cur">₽</span></p>' +
        '<p class="sub">≈ ' + rub(c.year) + ' в год</p>' +
        '<div class="tiles"><div class="tile"><span>Подписки · ' + state.subs.length + '</span><b>' + rub(c.subMonth) + '/мес</b></div>' +
-       '<div class="tile"><span>Платежи · ' + c.billCount + '</span><b>' + rub(c.billMonth) + '/мес</b></div></div></section>';
+       '<div class="tile"><span>Платежи · ' + c.billCount + '</span><b>' + rub(c.billMonth) + '/мес</b></div>' +
+       (function(){ var m = monthLeft(); return m.n ? '<div class="tile left"><span>Осталось оплатить в этом месяце · ' + m.n + '</span><b>' + rub(m.sum) + '</b></div>' : ''; })() +
+       '</div></section>';
   if (empty) {
     h += '<section class="card empty' + rise(i++) + '"><h3>Пока пусто</h3>' +
          '<p>Добавьте подписки и регулярные платежи. Здесь появятся итоговая сумма, ближайшие списания и просрочки.</p>' +
@@ -518,9 +543,9 @@ function dashView(){
   h += '<section class="card' + rise(i++) + '"><h3>Ближайшие 7 дней</h3>' +
        (c.soon.length ? timeline(c.soon) : '<p class="muted" style="margin:0">Ничего срочного. Платежи и списания на неделю появятся здесь.</p>') + '</section>';
   if (c.cats.length) {
-    h += '<section class="card' + rise(i++) + '"><h3>Куда уходят деньги</h3><div class="bars">' + c.cats.map(function(x){
-      return '<div><div class="bar-top"><span>' + esc(x[0]) + '</span><span>' + rub(x[1]) + '/мес</span></div>' +
-             '<div class="track"><div class="fill" style="width:' + Math.max(2, x[1] / c.total * 100).toFixed(1) + '%"></div></div></div>';
+    h += '<section class="card' + rise(i++) + '"><h3>Куда уходят деньги</h3><div class="bars">' + c.cats.map(function(x, ix){
+      return '<div><div class="bar-top"><span><i class="dot" style="background:' + PAL[ix % PAL.length] + '"></i>' + esc(x[0]) + '</span><span>' + rub(x[1]) + '/мес</span></div>' +
+             '<div class="track"><div class="fill" style="background:' + PAL[ix % PAL.length] + ';width:' + Math.max(2, x[1] / c.total * 100).toFixed(1) + '%"></div></div></div>';
     }).join('') + '</div></section>';
   }
   return '<div class="stack">' + h + '</div>';
@@ -653,14 +678,16 @@ function calPick(name, v){
 /* ---------- подписки ---------- */
 function headHtml(title, sub, kind){
   return '<div class="head' + rise(0) + '"><div><h2>' + title + '</h2><p>' + sub + '</p></div>' +
-         '<button class="btn primary" data-a="add" data-k="' + kind + '">' + IC.plus + 'Добавить</button></div>';
+         '<button class="btn primary" data-a="add" data-k="' + kind + '">' + IC.plus + 'Добавить</button></div>' +
+         (state[kind].length >= 5 ? '<div class="search"><input id="q" type="search" enterkeyhint="search" placeholder="Поиск по названию и категории" value="' + esc(ui.q || '') + '" autocomplete="off"></div>' : '');
 }
 function emptyList(title, text, kind, label){
+  if (state[kind].length) return '<p class="nf">Ничего не найдено</p>';
   return '<section class="card empty' + rise(1) + '"><h3>' + title + '</h3><p>' + text + '</p>' +
          '<div class="actions"><button class="btn primary" data-a="add" data-k="' + kind + '">' + IC.plus + label + '</button></div></section>';
 }
 function subsView(){
-  var list = state.subs.slice().sort(function(a, b){ return a.next < b.next ? -1 : a.next > b.next ? 1 : 0; });
+  var list = state.subs.slice().filter(qf).sort(function(a, b){ return a.next < b.next ? -1 : a.next > b.next ? 1 : 0; });
   var c = calc();
   var sub = list.length ? list.length + ' ' + plural(list.length, ['подписка','подписки','подписок']) + ' · ' + rub(c.subMonth) + ' в месяц' : 'Здесь будут ваши регулярные списания';
   var rows = list.map(function(s, n){
@@ -681,7 +708,7 @@ function subsView(){
 
 /* ---------- платежи ---------- */
 function billsView(){
-  var list = state.bills.slice().sort(function(a, b){
+  var list = state.bills.slice().filter(qf).sort(function(a, b){
     if (!!a.paid !== !!b.paid) return a.paid ? 1 : -1;
     return a.due < b.due ? -1 : a.due > b.due ? 1 : 0;
   });
@@ -746,9 +773,20 @@ function find(kind, id){ return state[kind].filter(function(x){ return x.id === 
 document.addEventListener('click', function(e){
   var el = e.target.closest('[data-a]');
   if (!el) return;
+  if (/^paid/.test(el.dataset.a)) buzz();
   var a = el.dataset.a, id = el.dataset.id, k = el.dataset.k || ui.tab;
+  if (a === 'export') {
+    var blob = new Blob([JSON.stringify({app:'lifepilot', v:2, subs:state.subs, bills:state.bills}, null, 2)], {type:'application/json'});
+    var link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'lifepilot-' + iso(today()) + '.json';
+    document.body.appendChild(link); link.click(); link.remove();
+    setTimeout(function(){ URL.revokeObjectURL(link.href); }, 2000);
+    toast('Копия сохранена'); return;
+  }
+  if (a === 'import') { document.getElementById('impFile').click(); return; }
   if (a === 'tab') {
-    if (ui.tab !== el.dataset.tab) { ui.tab = el.dataset.tab; render(true); window.scrollTo(0, 0); }
+    if (ui.tab !== el.dataset.tab) { ui.tab = el.dataset.tab; ui.q = ''; render(true); window.scrollTo(0, 0); }
     return;
   }
   if (a === 'add') { openSheet(k === 'dash' ? 'subs' : k, null); return; }
@@ -802,6 +840,35 @@ document.addEventListener('keydown', function(e){
   }
 });
 
+document.getElementById('impFile').addEventListener('change', function(e){
+  var f = e.target.files && e.target.files[0];
+  e.target.value = '';
+  if (!f) return;
+  var r = new FileReader();
+  r.onload = function(){
+    try {
+      var d = JSON.parse(r.result);
+      if (!d || !Array.isArray(d.subs) || !Array.isArray(d.bills)) throw 0;
+      function ok(x){ return x && typeof x === 'object' && x.name; }
+      snapshot();
+      state.subs = d.subs.filter(ok).map(function(x){ x.id = x.id || uid(); return x; });
+      state.bills = d.bills.filter(ok).map(function(x){ x.id = x.id || uid(); return x; });
+      save(); render(true);
+      toast('Копия загружена: ' + state.subs.length + ' подписок, ' + state.bills.length + ' платежей', true);
+    } catch(err) { toast('Не удалось прочитать файл'); }
+  };
+  r.readAsText(f);
+});
+
+document.addEventListener('input', function(e){
+  if (e.target.id !== 'q') return;
+  ui.q = e.target.value;
+  var tmp = document.createElement('div');
+  tmp.innerHTML = ui.tab === 'subs' ? subsView() : billsView();
+  var oldS = document.getElementById('main').firstElementChild, newS = tmp.firstElementChild;
+  if (oldS && newS) oldS.lastElementChild.replaceWith(newS.lastElementChild);
+});
+
 document.addEventListener('submit', function(e){
   var f = e.target.closest('form[data-form]');
   if (!f) return;
@@ -836,6 +903,7 @@ document.addEventListener('submit', function(e){
 });
 
 render(true);
+if ('serviceWorker' in navigator && /^https?:/.test(location.protocol)) navigator.serviceWorker.register('sw.js').catch(function(){});
 })();
 </script>
 
